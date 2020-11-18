@@ -1,14 +1,23 @@
 package au.edu.unsw.infs3634.covidtracker;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 
 import java.text.DecimalFormat;
@@ -26,6 +35,7 @@ public class DetailActivity extends AppCompatActivity {
     private TextView mNewRecovered;
     private TextView mTotalRecovered;
     private ImageView mSearch;
+    private CheckBox mHome;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +50,8 @@ public class DetailActivity extends AppCompatActivity {
         mNewRecovered = findViewById(R.id.tvNewRecovered);
         mTotalRecovered = findViewById(R.id.tvTotalRecovered);
         mSearch = findViewById(R.id.ivSearch);
+        mHome = findViewById(R.id.cbHome);
+
 
         Intent intent = getIntent();
         String countryCode = intent.getStringExtra(INTENT_MESSAGE);
@@ -62,6 +74,36 @@ public class DetailActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v) {
                         searchCountry(country.getCountry());
+                    }
+                });
+                FirebaseDatabase database = FirebaseDatabase.getInstance();
+                DatabaseReference messageRef = database.getReference(FirebaseAuth.getInstance().getUid());
+                messageRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        String result = (String) snapshot.getValue();
+                        if(result != null && result.equals(country.getCountryCode())){
+                            mHome.setChecked(true);
+                        }
+                        else{
+                            mHome.setChecked(false);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+                mHome.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        DatabaseReference messageRef = database.getReference(FirebaseAuth.getInstance().getUid());
+                        if(isChecked){
+                            messageRef.setValue(country.getCountryCode());
+                        }else{
+                            messageRef.setValue("");
+                        }
                     }
                 });
             }
